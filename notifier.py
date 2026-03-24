@@ -320,8 +320,13 @@ def _build_message(sender_email, to_email, subject, body, reply_to="", html_body
 
 
 def _send_via_resend(settings, to_email, subject, body, html_body=""):
+    # Wrap bare addresses with a friendly display name
+    from_addr = settings["from_email"]
+    if "<" not in from_addr:
+        from_addr = f"Add/Drop Alerts <{from_addr}>"
+
     payload = {
-        "from": settings["from_email"],
+        "from": from_addr,
         "to": [to_email],
         "subject": subject,
         "text": body,
