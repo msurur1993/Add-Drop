@@ -426,6 +426,53 @@ def health():
     return {"status": "ok", "watched_count": WatchedClass.query.count()}
 
 
+@app.route("/admin/stats")
+@login_required
+def admin_stats():
+    """Simple admin stats page — only accessible to the first registered user (admin)."""
+    user = db.session.get(User, session["user_id"])
+    if user.id != 1:
+        return redirect(url_for("dashboard"))
+
+    from sqlalchemy import func
+
+    total_users = User.query.count()
+    total_watches = WatchedClass.query.count()
+    total_notifications = Notification.query.count()
+    distinct_classes = db.session.query(
+        WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section
+    ).distinct().count()
+
+    recent_users = User.query.order_by(User.created_at.desc()).limit(20).all()
+    recent_notifications = (
+        db.session.query(Notification, User)
+        .join(User, Notification.user_id == User.id)
+        .order_by(Notification.sent_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    # Per-user watch counts
+    user_watches = (
+        db.session.query(User.name, User.email, func.count(WatchedClass.id).label("count"))
+        .join(WatchedClass, User.id == WatchedClass.user_id)
+        .group_by(User.id)
+        .order_by(func.count(WatchedClass.id).desc())
+        .all()
+    )
+
+    return render_template(
+        "admin_stats.html",
+        total_users=total_users,
+        total_watches=total_watches,
+        total_notifications=total_notifications,
+        distinct_classes=distinct_classes,
+        recent_users=recent_users,
+        recent_notifications=recent_notifications,
+        user_watches=user_watches,
+    )
+
+
 @app.errorhandler(429)
 def ratelimit_handler(e):
     return '<div class="p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">Too many requests. Please slow down.</div>', 429

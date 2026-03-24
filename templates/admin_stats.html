@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-lg font-semibold mb-6 text-gray-900">Admin Dashboard</h2>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-center">
+            <p class="text-3xl font-bold text-[#800000]">{{ total_users }}</p>
+            <p class="text-xs text-gray-500 mt-1">Users</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-center">
+            <p class="text-3xl font-bold text-[#800000]">{{ total_watches }}</p>
+            <p class="text-xs text-gray-500 mt-1">Active Watches</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-center">
+            <p class="text-3xl font-bold text-[#800000]">{{ distinct_classes }}</p>
+            <p class="text-xs text-gray-500 mt-1">Distinct Classes</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-center">
+            <p class="text-3xl font-bold text-[#800000]">{{ total_notifications }}</p>
+            <p class="text-xs text-gray-500 mt-1">Notifications Sent</p>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+        <!-- Users with watches -->
+        <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Users by Watch Count</h3>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 text-xs">
+                        <tr>
+                            <th class="text-left px-4 py-2">User</th>
+                            <th class="text-left px-4 py-2">Email</th>
+                            <th class="text-right px-4 py-2">Watches</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, email, count in user_watches %}
+                        <tr class="border-t border-gray-100">
+                            <td class="px-4 py-2 text-gray-900">{{ name or '—' }}</td>
+                            <td class="px-4 py-2 text-gray-500 truncate max-w-[160px]">{{ email or '—' }}</td>
+                            <td class="px-4 py-2 text-right font-medium text-[#800000]">{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not user_watches %}
+                        <tr><td colspan="3" class="px-4 py-3 text-gray-400 text-center">No watches yet</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent users -->
+        <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Recent Users</h3>
+            <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 text-xs">
+                        <tr>
+                            <th class="text-left px-4 py-2">Name</th>
+                            <th class="text-left px-4 py-2">Email</th>
+                            <th class="text-right px-4 py-2">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in recent_users %}
+                        <tr class="border-t border-gray-100">
+                            <td class="px-4 py-2 text-gray-900">{{ u.name or u.username }}</td>
+                            <td class="px-4 py-2 text-gray-500 truncate max-w-[160px]">{{ u.email or '—' }}</td>
+                            <td class="px-4 py-2 text-right text-gray-400">{{ u.created_at | chicago_time if u.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent notifications -->
+    <div class="mt-8">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Recent Notifications</h3>
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500 text-xs">
+                    <tr>
+                        <th class="text-left px-4 py-2">User</th>
+                        <th class="text-left px-4 py-2">Message</th>
+                        <th class="text-right px-4 py-2">Sent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notif, user in recent_notifications %}
+                    <tr class="border-t border-gray-100">
+                        <td class="px-4 py-2 text-gray-900">{{ user.name or user.email }}</td>
+                        <td class="px-4 py-2 text-gray-500">{{ notif.message }}</td>
+                        <td class="px-4 py-2 text-right text-gray-400 whitespace-nowrap">{{ notif.sent_at | chicago_time if notif.sent_at else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not recent_notifications %}
+                    <tr><td colspan="3" class="px-4 py-3 text-gray-400 text-center">No notifications sent yet</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
