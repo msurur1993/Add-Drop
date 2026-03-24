@@ -1,0 +1,50 @@
+{% if error %}
+<div class="p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+    {{ error }}
+</div>
+{% elif results %}
+<div class="space-y-2">
+    {% for r in results %}
+    <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between shadow-sm">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-block w-2 h-2 rounded-full {% if r.status == 'Open' %}bg-emerald-500{% else %}bg-red-500{% endif %}"></span>
+                <span class="font-medium text-sm text-gray-900 truncate">{{ r.subject }} {{ r.catalog_number }}/{{ r.section }}{% if r.class_nbr %} [{{ r.class_nbr }}]{% endif %}</span>
+            </div>
+            <p class="text-xs text-gray-500 truncate">{{ r.course_name }}</p>
+            <p class="text-xs text-gray-400 mt-1">
+                {{ r.enrolled }}/{{ r.capacity }} enrolled &middot;
+                <span class="{% if r.status == 'Open' %}text-emerald-600{% else %}text-red-600{% endif %}">{{ r.status }}</span>
+            </p>
+            {% if r.instructor or r.schedule %}
+            <p class="text-xs text-gray-400 mt-0.5">
+                {% if r.instructor %}{{ r.instructor }}{% endif %}
+                {% if r.instructor and r.schedule %} &middot; {% endif %}
+                {% if r.schedule %}{{ r.schedule }}{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="ml-4 flex-shrink-0">
+            {% if (r.subject, r.catalog_number, r.section) in watched_keys %}
+            <span id="track-btn-{{ r.subject }}-{{ r.catalog_number }}-{{ r.section }}" class="text-xs text-gray-400 px-3 py-1.5 bg-gray-100 rounded-lg">Tracking</span>
+            {% else %}
+            <button
+                id="track-btn-{{ r.subject }}-{{ r.catalog_number }}-{{ r.section }}"
+                hx-post="/watch"
+                hx-vals='{"subject": "{{ r.subject }}", "catalog_number": "{{ r.catalog_number }}", "section": "{{ r.section }}", "term": "{{ term }}"}'
+                hx-target="#watchlist"
+                hx-swap="afterbegin"
+                class="text-xs px-3 py-1.5 bg-[#800000] hover:bg-[#9A2A2A] text-white rounded-lg transition"
+            >
+                Track
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="p-3 rounded-lg text-sm bg-gray-100 text-gray-500 border border-gray-200">
+    No results found. Try a different search term or department.
+</div>
+{% endif %}

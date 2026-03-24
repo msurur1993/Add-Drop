@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite
+.env
+.env.*
+!.env.example
+instance/
+credentials.json
+token.json
+stitch-web/node_modules/
+noor-quran/node_modules/
+noor-quran/
+.claude/

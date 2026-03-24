@@ -1,0 +1,65 @@
+// Default/fallback stock data - will be overwritten with real data
+export const stocks = [
+  {
+    id: "SPUS",
+    name: "S&P 500 Sharia Industry Exclusions ETF",
+    exchange: "NYSE",
+    currentPrice: 34.12,
+    dailyChange: 0.84,
+    marketCap: "1.2B",
+    peRatio: 22.15,
+    divYield: 1.12,
+    avgVolume: "45.2M",
+    high52Week: 38.5,
+    sparkline: [],
+  },
+  {
+    id: "SPDR GLD",
+    name: "SPDR Gold Shares",
+    exchange: "NYSE",
+    currentPrice: 212.45,
+    dailyChange: -0.21,
+    marketCap: "62.8B",
+    peRatio: 0,
+    divYield: 0,
+    avgVolume: "8.1M",
+    high52Week: 225.3,
+    sparkline: [],
+  },
+  {
+    id: "NVDA",
+    name: "NVIDIA Corporation",
+    exchange: "NASDAQ",
+    currentPrice: 128.54,
+    dailyChange: 2.45,
+    afterHoursPrice: 128.6,
+    marketCap: "3.16T",
+    peRatio: 74.21,
+    divYield: 0.02,
+    avgVolume: "412.8M",
+    high52Week: 140.76,
+    sparkline: [],
+  },
+  {
+    id: "CRWV",
+    name: "CrowdStrike Holdings",
+    exchange: "NASDAQ",
+    currentPrice: 875.28,
+    dailyChange: 4.28,
+    marketCap: "210.5B",
+    peRatio: 680.12,
+    divYield: 0,
+    avgVolume: "3.2M",
+    high52Week: 920.0,
+    sparkline: [],
+  },
+];
+
+export const initialHoldings = [
+  { id: "SPUS", shares: 1117.5, averageCost: 30.35 },
+  { id: "NVDA", shares: 245.1, averageCost: 91.3 },
+  { id: "SPDR GLD", shares: 113.5, averageCost: 214.63 },
+  { id: "CRWV", shares: 14.27, averageCost: 868.32 },
+];
+
+export const initialCash = 18422.15;

@@ -1,0 +1,380 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		61E6F1FE33EEBC7217EA3632 /* StitchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE04965CBC77969A22A12C1 /* StitchApp.swift */; };
+		A9A3CFEE6E8704749FA7AC51 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A33FA35B40AD7DC0DAFF5840 /* AppTheme.swift */; };
+		3D11AFFA8BFF1B5BEF76D58C /* Stock.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA3DE9C2035AAA8832F33C3B /* Stock.swift */; };
+		C55C19E87EABE61C68F223B6 /* Holding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ED1549FF71EAFA488CA2F98 /* Holding.swift */; };
+		718DCEDA9493CB0CDD67572C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A345522E76C36E25CF7E205 /* Portfolio.swift */; };
+		B2A11FEA12D07466238FE321 /* PortfolioViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11A3EBC4174D7F6ACDBF2434 /* PortfolioViewModel.swift */; };
+		D94F7B9A19ED91557312E5AF /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB2491E4AB1A9301DB57FE38 /* DashboardView.swift */; };
+		1BB50F1FF08403BFEC0E0BF3 /* StockDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F6419A667797865ABF2AFE /* StockDetailView.swift */; };
+		5522497C671D4EDDB06DDE1D /* TradeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A58BF79C5B63D507EFA0C8 /* TradeView.swift */; };
+		BE08B6E534F43F2E376A26DA /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F435C43F7EDB35B79DA67 /* PortfolioView.swift */; };
+		AD6768FC34F163B491A4BD5E /* StockIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5F0BA4EE215262A64B12A0 /* StockIconView.swift */; };
+		7F9A6462ECFDBBC9C2A7AA9A /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2426645A4EF7F81A553DC084 /* SparklineView.swift */; };
+		54F2C2A4FD7EE6D92E0325C5 /* PerformanceChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B92868659FB75CF32C8326A /* PerformanceChartView.swift */; };
+		0FA234502073A56AA6DC55BF /* WatchlistRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6BF669A7D94E64198A4A0F /* WatchlistRowView.swift */; };
+		AA2215F7953EA88F7F46D9C4 /* HoldingRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E186A932C260FFD4E60D1439 /* HoldingRowView.swift */; };
+		630079499D908838C6A12464 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FCB8953AE57039F8C975994A /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3FE04965CBC77969A22A12C1 /* StitchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StitchApp.swift"; sourceTree = "<group>"; };
+		A33FA35B40AD7DC0DAFF5840 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppTheme.swift"; sourceTree = "<group>"; };
+		EA3DE9C2035AAA8832F33C3B /* Stock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Stock.swift"; sourceTree = "<group>"; };
+		1ED1549FF71EAFA488CA2F98 /* Holding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Holding.swift"; sourceTree = "<group>"; };
+		6A345522E76C36E25CF7E205 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Portfolio.swift"; sourceTree = "<group>"; };
+		11A3EBC4174D7F6ACDBF2434 /* PortfolioViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PortfolioViewModel.swift"; sourceTree = "<group>"; };
+		FB2491E4AB1A9301DB57FE38 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardView.swift"; sourceTree = "<group>"; };
+		52F6419A667797865ABF2AFE /* StockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StockDetailView.swift"; sourceTree = "<group>"; };
+		90A58BF79C5B63D507EFA0C8 /* TradeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TradeView.swift"; sourceTree = "<group>"; };
+		7D4F435C43F7EDB35B79DA67 /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PortfolioView.swift"; sourceTree = "<group>"; };
+		FE5F0BA4EE215262A64B12A0 /* StockIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StockIconView.swift"; sourceTree = "<group>"; };
+		2426645A4EF7F81A553DC084 /* SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SparklineView.swift"; sourceTree = "<group>"; };
+		0B92868659FB75CF32C8326A /* PerformanceChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PerformanceChartView.swift"; sourceTree = "<group>"; };
+		5A6BF669A7D94E64198A4A0F /* WatchlistRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WatchlistRowView.swift"; sourceTree = "<group>"; };
+		E186A932C260FFD4E60D1439 /* HoldingRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HoldingRowView.swift"; sourceTree = "<group>"; };
+		FCB8953AE57039F8C975994A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FC6D180BE7A67769D0E96F58 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		2C090C541E206D79AB76701F /* Stitch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stitch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6BC9136C2E1B992EF374A2EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8D3FC6DB5D0827F168A73277 = {
+			isa = PBXGroup;
+			children = (
+				D80ABDA3FB5DA41428A03449 /* Stitch */,
+				1BADDC1D73C1A20F347483E1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1BADDC1D73C1A20F347483E1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2C090C541E206D79AB76701F /* Stitch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D80ABDA3FB5DA41428A03449 /* Stitch */ = {
+			isa = PBXGroup;
+			children = (
+				B4A7E86B2D6C42B1FF9B7F42 /* Theme */,
+				E7651EE138212D3A5C27ABA0 /* Models */,
+				A28680D3E3CD8001077030DA /* ViewModels */,
+				9CECDDFA5EF2AE0232F90708 /* Views */,
+				615826295301C4256DCBF7F5 /* Components */,
+				2575A824E1DE54D2B26A9A8B /* Preview Content */,
+				FCB8953AE57039F8C975994A /* Assets.xcassets */,
+				3FE04965CBC77969A22A12C1 /* StitchApp.swift */
+			);
+			path = Stitch;
+			sourceTree = "<group>";
+		};
+		E7651EE138212D3A5C27ABA0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				EA3DE9C2035AAA8832F33C3B /* Stock.swift */,
+				1ED1549FF71EAFA488CA2F98 /* Holding.swift */,
+				6A345522E76C36E25CF7E205 /* Portfolio.swift */
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		9CECDDFA5EF2AE0232F90708 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FB2491E4AB1A9301DB57FE38 /* DashboardView.swift */,
+				52F6419A667797865ABF2AFE /* StockDetailView.swift */,
+				90A58BF79C5B63D507EFA0C8 /* TradeView.swift */,
+				7D4F435C43F7EDB35B79DA67 /* PortfolioView.swift */
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A28680D3E3CD8001077030DA /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				11A3EBC4174D7F6ACDBF2434 /* PortfolioViewModel.swift */
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		615826295301C4256DCBF7F5 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				FE5F0BA4EE215262A64B12A0 /* StockIconView.swift */,
+				2426645A4EF7F81A553DC084 /* SparklineView.swift */,
+				0B92868659FB75CF32C8326A /* PerformanceChartView.swift */,
+				5A6BF669A7D94E64198A4A0F /* WatchlistRowView.swift */,
+				E186A932C260FFD4E60D1439 /* HoldingRowView.swift */
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		B4A7E86B2D6C42B1FF9B7F42 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				A33FA35B40AD7DC0DAFF5840 /* AppTheme.swift */
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		2575A824E1DE54D2B26A9A8B /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				FC6D180BE7A67769D0E96F58 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42AEFBAE01D2DFD981F7DA7D /* Stitch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F4B69E1C2D7780B6DE87DC8 /* Build configuration list for PBXNativeTarget "Stitch" */;
+			buildPhases = (
+				F680599402C0D80E245DE801 /* Sources */,
+				781C774F390DF12CD292A30B /* Resources */,
+				6BC9136C2E1B992EF374A2EA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Stitch;
+			productName = Stitch;
+			productReference = 2C090C541E206D79AB76701F /* Stitch.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+			};
+			buildConfigurationList = 1EA27E9E5E6EF12D4FFF00B1 /* Build configuration list for PBXProject "Stitch" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8D3FC6DB5D0827F168A73277;
+			productRefGroup = 1BADDC1D73C1A20F347483E1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42AEFBAE01D2DFD981F7DA7D /* Stitch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		781C774F390DF12CD292A30B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				630079499D908838C6A12464 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F680599402C0D80E245DE801 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61E6F1FE33EEBC7217EA3632 /* StitchApp.swift in Sources */,
+				A9A3CFEE6E8704749FA7AC51 /* AppTheme.swift in Sources */,
+				3D11AFFA8BFF1B5BEF76D58C /* Stock.swift in Sources */,
+				C55C19E87EABE61C68F223B6 /* Holding.swift in Sources */,
+				718DCEDA9493CB0CDD67572C /* Portfolio.swift in Sources */,
+				B2A11FEA12D07466238FE321 /* PortfolioViewModel.swift in Sources */,
+				D94F7B9A19ED91557312E5AF /* DashboardView.swift in Sources */,
+				1BB50F1FF08403BFEC0E0BF3 /* StockDetailView.swift in Sources */,
+				5522497C671D4EDDB06DDE1D /* TradeView.swift in Sources */,
+				BE08B6E534F43F2E376A26DA /* PortfolioView.swift in Sources */,
+				AD6768FC34F163B491A4BD5E /* StockIconView.swift in Sources */,
+				7F9A6462ECFDBBC9C2A7AA9A /* SparklineView.swift in Sources */,
+				54F2C2A4FD7EE6D92E0325C5 /* PerformanceChartView.swift in Sources */,
+				0FA234502073A56AA6DC55BF /* WatchlistRowView.swift in Sources */,
+				AA2215F7953EA88F7F46D9C4 /* HoldingRowView.swift in Sources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6C81446AD7F76FA3F1FCD0BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		2ABCC2DBEB6E0DC43435908C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		39D590ADCDE74882CC74E8ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Stitch/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Precision Ledger";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.precisionledger.stitch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C52DE9DB66865FD8CD9E712E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Stitch/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Precision Ledger";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.precisionledger.stitch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1EA27E9E5E6EF12D4FFF00B1 /* Build configuration list for PBXProject "Stitch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C81446AD7F76FA3F1FCD0BF /* Debug */,
+				2ABCC2DBEB6E0DC43435908C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3F4B69E1C2D7780B6DE87DC8 /* Build configuration list for PBXNativeTarget "Stitch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				39D590ADCDE74882CC74E8ED /* Debug */,
+				C52DE9DB66865FD8CD9E712E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}

@@ -1,0 +1,40 @@
+{% if watch_data %}
+{% for item in watch_data %}
+{% set w = item.watch %}
+{% set s = item.status %}
+<div class="watchlist-item bg-white border border-gray-200 rounded-lg p-4 mb-2 flex items-center justify-between shadow-sm" id="watch-{{ w.id }}">
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+            {% if s %}
+            <span class="inline-block w-2 h-2 rounded-full {% if s.status == 'Open' %}bg-emerald-500{% elif s.status == 'Closed' %}bg-red-500{% else %}bg-gray-400{% endif %}"></span>
+            {% else %}
+            <span class="inline-block w-2 h-2 rounded-full bg-gray-400"></span>
+            {% endif %}
+            <span class="font-medium text-sm text-gray-900">{{ w.subject }} {{ w.catalog_number }} &middot; Sec {{ w.section }}</span>
+        </div>
+        {% if s %}
+        <p class="text-xs text-gray-500">{{ s.course_name or 'Pending first check...' }}</p>
+        <p class="text-xs text-gray-400 mt-1">
+            {{ s.enrolled }}/{{ s.capacity }} enrolled &middot;
+            <span class="{% if s.status == 'Open' %}text-emerald-600{% elif s.status == 'Closed' %}text-red-600{% else %}text-gray-500{% endif %}">{{ s.status }}</span>
+            {% if s.last_checked %}
+            &middot; checked {{ s.last_checked.strftime('%-I:%M %p') }}
+            {% endif %}
+        </p>
+        {% else %}
+        <p class="text-xs text-gray-400">Waiting for first check...</p>
+        {% endif %}
+    </div>
+    <button
+        hx-delete="/unwatch/{{ w.id }}"
+        hx-target="#watch-{{ w.id }}"
+        hx-swap="outerHTML swap:300ms"
+        class="ml-4 text-xs px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-500 rounded-lg transition flex-shrink-0"
+    >
+        Untrack
+    </button>
+</div>
+{% endfor %}
+{% else %}
+<p class="text-gray-400 text-sm">No classes tracked yet. Search and add classes to start monitoring.</p>
+{% endif %}

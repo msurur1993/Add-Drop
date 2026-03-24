@@ -1,0 +1,11 @@
+/* Minimal custom styles — Tailwind handles most styling via CDN */
+
+/* Smooth removal animation for watchlist items */
+.watchlist-item {
+    transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+
+.watchlist-item.htmx-swapping {
+    opacity: 0;
+    transform: translateX(20px);
+}

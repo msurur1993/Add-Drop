@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid lg:grid-cols-2 gap-8">
+    <!-- Search Panel -->
+    <div>
+        <h2 class="text-lg font-semibold mb-4 text-gray-900">Search Classes</h2>
+        <form
+            hx-post="/search"
+            hx-target="#search-results"
+            hx-indicator="#search-spinner"
+            class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm"
+        >
+            <div class="mb-3">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Department</label>
+                <select name="subject" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#800000] text-sm">
+                    <option value="">All departments</option>
+                    {% for code, name in departments %}
+                    <option value="{{ code }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+                <input
+                    type="text" name="keyword" required
+                    placeholder="Course name, number, or instructor..."
+                    class="w-full px-3 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#800000] text-sm"
+                >
+                <p class="text-xs text-gray-400 mt-1">e.g. "Macroeconomics", "10200", or "Galvez"</p>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 bg-[#800000] hover:bg-[#9A2A2A] text-white font-medium rounded-lg transition text-sm flex items-center justify-center gap-2">
+                <span>Search Courses</span>
+                <svg id="search-spinner" class="htmx-indicator animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </button>
+        </form>
+
+        <div id="search-results" class="mt-4"></div>
+    </div>
+
+    <!-- Watchlist Panel -->
+    <div>
+        <h2 class="text-lg font-semibold mb-4 text-gray-900">Your Watchlist</h2>
+
+        <!-- Email notifications -->
+        <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[#800000] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <p class="text-sm text-gray-700">Notifications go to <span class="font-medium text-[#800000]">{{ user.email }}</span></p>
+            </div>
+            {% if notifications_ready %}
+            <p class="text-xs text-gray-400 mt-2">Seat alerts are enabled and send from <span class="font-medium">{{ notification_sender }}</span>{% if notification_provider %} via {{ notification_provider }}{% endif %}.</p>
+            {% else %}
+            <p class="text-xs text-amber-700 mt-2">Email delivery still needs an app mail provider. Configure Resend, SMTP, or the legacy Gmail API fallback to send alerts from an app-owned address.</p>
+            {% endif %}
+        </div>
+
+        <div id="watchlist" hx-get="/watchlist" hx-trigger="load, every 30s" hx-swap="innerHTML">
+            <!-- Watchlist loads here -->
+            {% if watch_data %}
+            {% for item in watch_data %}
+            {% include "partials/watchlist_item.html" with context %}
+            {% endfor %}
+            {% else %}
+            <p class="text-gray-400 text-sm">No classes tracked yet. Search and add classes to start monitoring.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
