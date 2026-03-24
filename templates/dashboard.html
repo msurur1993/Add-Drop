@@ -42,7 +42,10 @@
 
     <!-- Watchlist Panel -->
     <div>
-        <h2 class="text-lg font-semibold mb-4 text-gray-900">Your Watchlist</h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Your Watchlist</h2>
+            <span class="text-xs text-gray-400">{{ watch_count }}/5 slots used</span>
+        </div>
 
         <!-- Email notifications -->
         <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">

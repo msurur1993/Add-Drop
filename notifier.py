@@ -290,16 +290,23 @@ def get_gmail_service(config=None):
 
 def _seat_opening_message(subject_code, catalog_number, section, course_name, enrolled, capacity):
     subject = f"Seat Available: {subject_code} {catalog_number}"
-    body = (
+    enroll_url = "https://portal.uchicago.edu/ais/"
+    text_body = (
         f"{subject_code} {catalog_number} Section {section} is now OPEN!\n\n"
         f"{course_name}\n"
         f"Enrollment: {enrolled}/{capacity}\n\n"
-        f"Log in to enroll before it fills up."
+        f"Log in to enroll before it fills up: {enroll_url}"
     )
-    return subject, body
+    html_body = (
+        f"<p><strong>{subject_code} {catalog_number} Section {section}</strong> is now OPEN!</p>"
+        f"<p>{course_name}<br>Enrollment: {enrolled}/{capacity}</p>"
+        f'<p><a href="{enroll_url}" style="color:#800000;font-weight:bold;">'
+        f"Log in to enroll before it fills up</a></p>"
+    )
+    return subject, text_body, html_body
 
 
-def _build_message(sender_email, to_email, subject, body, reply_to=""):
+def _build_message(sender_email, to_email, subject, body, reply_to="", html_body=""):
     msg = EmailMessage()
     msg["To"] = to_email
     msg["From"] = sender_email
@@ -307,16 +314,20 @@ def _build_message(sender_email, to_email, subject, body, reply_to=""):
     if reply_to:
         msg["Reply-To"] = reply_to
     msg.set_content(body)
+    if html_body:
+        msg.add_alternative(html_body, subtype="html")
     return msg
 
 
-def _send_via_resend(settings, to_email, subject, body):
+def _send_via_resend(settings, to_email, subject, body, html_body=""):
     payload = {
         "from": settings["from_email"],
         "to": [to_email],
         "subject": subject,
         "text": body,
     }
+    if html_body:
+        payload["html"] = html_body
     if settings["reply_to"]:
         payload["reply_to"] = settings["reply_to"]
 
@@ -338,13 +349,14 @@ def _send_via_resend(settings, to_email, subject, body):
         return False
 
 
-def _send_via_smtp(settings, to_email, subject, body):
+def _send_via_smtp(settings, to_email, subject, body, html_body=""):
     msg = _build_message(
         settings["from_email"],
         to_email,
         subject,
         body,
         settings["reply_to"],
+        html_body,
     )
 
     try:
@@ -377,7 +389,7 @@ def _send_via_smtp(settings, to_email, subject, body):
         return False
 
 
-def _send_via_gmail(settings, to_email, subject, body):
+def _send_via_gmail(settings, to_email, subject, body, html_body=""):
     service = _get_gmail_service(settings)
     if not service:
         logger.error("Gmail service not available — cannot send notification")
@@ -389,6 +401,7 @@ def _send_via_gmail(settings, to_email, subject, body):
         subject,
         body,
         _config_value(settings, "reply_to", ""),
+        html_body,
     )
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
@@ -418,7 +431,7 @@ def notify_user(config, to_email, subject_code, catalog_number, section, course_
         logger.error("Email notifications are not configured for provider '%s'", settings["provider"])
         return False
 
-    subject, body = _seat_opening_message(
+    subject, body, html_body = _seat_opening_message(
         subject_code,
         catalog_number,
         section,
@@ -429,14 +442,14 @@ def notify_user(config, to_email, subject_code, catalog_number, section, course_
 
     provider = settings["provider"]
     if provider == "resend":
-        return _send_via_resend(settings, to_email, subject, body)
+        return _send_via_resend(settings, to_email, subject, body, html_body)
     if provider == "smtp":
-        return _send_via_smtp(settings, to_email, subject, body)
+        return _send_via_smtp(settings, to_email, subject, body, html_body)
     if provider == "gmail_api":
         gmail_settings = dict(settings["gmail"])
         gmail_settings["sender"] = settings["from_email"]
         gmail_settings["reply_to"] = settings["reply_to"]
-        return _send_via_gmail(gmail_settings, to_email, subject, body)
+        return _send_via_gmail(gmail_settings, to_email, subject, body, html_body)
 
     logger.error(
         "Unsupported EMAIL_PROVIDER '%s'. Use 'resend', 'smtp', or 'gmail_api'.",

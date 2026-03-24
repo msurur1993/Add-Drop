@@ -11,6 +11,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from authlib.integrations.base_client import OAuthError
 from authlib.integrations.flask_client import OAuth
 from flask import Flask, flash, make_response, redirect, render_template, request, session, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from config import Config
 from departments import DEPARTMENTS
@@ -26,10 +28,19 @@ from scraper import PeopleSoftScraper
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
+MAX_WATCHES_PER_USER = 5
+
 # --- App setup ---
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
 
 
 def google_oauth_ready():
@@ -107,6 +118,7 @@ def index():
 
 
 @app.route("/login/google")
+@limiter.limit("5/minute")
 def login_google():
     if not google:
         flash("Google sign-in is not configured yet.", "error")
@@ -205,6 +217,7 @@ def dashboard():
         "dashboard.html",
         user=user,
         watch_data=watch_data,
+        watch_count=len(watches),
         term=app.config["CURRENT_TERM"],
         departments=DEPARTMENTS,
         notifications_ready=notifications_ready(app.config),
@@ -214,6 +227,7 @@ def dashboard():
 
 
 @app.route("/search", methods=["POST"])
+@limiter.limit("10/minute")
 @login_required
 def search():
     subject = request.form.get("subject", "").strip().upper()
@@ -270,6 +284,7 @@ def search():
 
 
 @app.route("/watch", methods=["POST"])
+@limiter.limit("20/minute")
 @login_required
 def watch():
     user_id = session["user_id"]
@@ -283,6 +298,14 @@ def watch():
         section=section, term=term
     ).first()
     if not existing:
+        current_count = WatchedClass.query.filter_by(user_id=user_id).count()
+        if current_count >= MAX_WATCHES_PER_USER:
+            toast = (
+                '<div hx-swap-oob="afterbegin:#toast-area">'
+                '<div class="toast bg-red-50 text-red-700 border border-red-200">'
+                f'Limit reached: you can track up to {MAX_WATCHES_PER_USER} classes.</div></div>'
+            )
+            return make_response(toast, 200)
         wc = WatchedClass(user_id=user_id, subject=subject, catalog_number=catalog_number, section=section, term=term)
         db.session.add(wc)
         db.session.commit()
@@ -296,8 +319,13 @@ def watch():
     btn_id = f"track-btn-{subject}-{catalog_number}-{section}"
     watchlist_html = render_template("partials/watchlist_item.html", watch=w, status=status)
     oob_html = f'<span id="{btn_id}" hx-swap-oob="true" class="text-xs text-gray-400 px-3 py-1.5 bg-gray-100 rounded-lg">Tracking</span>'
+    toast_html = (
+        '<div hx-swap-oob="afterbegin:#toast-area">'
+        f'<div class="toast bg-green-50 text-green-700 border border-green-200">'
+        f'Now tracking {subject} {catalog_number} Sec {section}</div></div>'
+    )
 
-    resp = make_response(watchlist_html + oob_html)
+    resp = make_response(watchlist_html + oob_html + toast_html)
     return resp
 
 
@@ -306,8 +334,14 @@ def watch():
 def unwatch(watch_id):
     wc = WatchedClass.query.filter_by(id=watch_id, user_id=session["user_id"]).first()
     if wc:
+        label = f"{wc.subject} {wc.catalog_number} Sec {wc.section}"
         db.session.delete(wc)
         db.session.commit()
+        return (
+            '<div hx-swap-oob="afterbegin:#toast-area">'
+            f'<div class="toast bg-gray-50 text-gray-700 border border-gray-200">'
+            f'Removed {label} from watchlist</div></div>'
+        )
     return "", 200
 
 
@@ -333,10 +367,20 @@ def health():
     return {"status": "ok", "watched_count": WatchedClass.query.count()}
 
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return '<div class="p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">Too many requests. Please slow down.</div>', 429
+
+
 # --- Background job ---
 
 def check_watched_classes():
-    """Background job: check all watched classes for availability changes."""
+    """Background job: check all watched classes for availability changes.
+
+    Scrapes each unique (term, subject, catalog_number) once regardless of how
+    many users watch it. On a CLOSED -> OPEN transition, all watchers of that
+    section are notified individually.
+    """
     with app.app_context():
         watched = db.session.query(
             WatchedClass.term, WatchedClass.subject, WatchedClass.catalog_number

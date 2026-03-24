@@ -40,5 +40,29 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Toast notifications -->
+    <div id="toast-area" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <style>
+        .toast {
+            pointer-events: auto;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            animation: toast-in 0.3s ease-out, toast-out 0.3s ease-in 2.7s forwards;
+        }
+        @keyframes toast-in { from { opacity:0; transform:translateY(1rem); } to { opacity:1; transform:translateY(0); } }
+        @keyframes toast-out { from { opacity:1; } to { opacity:0; } }
+    </style>
+
+    <script>
+        document.addEventListener('animationend', function(e) {
+            if (e.animationName === 'toast-out' && e.target.classList.contains('toast')) {
+                e.target.remove();
+            }
+        });
+    </script>
 </body>
 </html>
