@@ -6,7 +6,10 @@ import re
 import secrets
 from datetime import datetime, timezone
 from functools import wraps
+from sqlite3 import IntegrityError as SQLiteIntegrityError
 from zoneinfo import ZoneInfo
+
+from sqlalchemy.exc import IntegrityError
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from authlib.integrations.base_client import OAuthError
@@ -208,6 +211,8 @@ def google_callback():
         if changed:
             db.session.commit()
 
+    # Regenerate session to prevent fixation
+    session.clear()
     session["user_id"] = user.id
     session["username"] = user.name or user.username
     flash("Signed in with Google.", "success")
@@ -329,7 +334,14 @@ def watch():
             return make_response(toast, 200)
         wc = WatchedClass(user_id=user_id, subject=subject, catalog_number=catalog_number, section=section, term=term)
         db.session.add(wc)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            existing = WatchedClass.query.filter_by(
+                user_id=user_id, subject=subject, catalog_number=catalog_number,
+                section=section, term=term
+            ).first()
 
     status = ClassStatus.query.filter_by(
         subject=subject, catalog_number=catalog_number, section=section, term=term
@@ -429,77 +441,97 @@ def check_watched_classes():
     section are notified individually.
     """
     with app.app_context():
-        watched = db.session.query(
-            WatchedClass.term, WatchedClass.subject, WatchedClass.catalog_number
-        ).distinct().all()
+        try:
+            watched = db.session.query(
+                WatchedClass.term, WatchedClass.subject, WatchedClass.catalog_number
+            ).distinct().all()
 
-        if not watched:
-            return
+            if not watched:
+                return
 
-        logger.info(f"Checking {len(watched)} distinct classes...")
+            logger.info(f"Checking {len(watched)} distinct classes...")
 
-        class_list = [(term, subj, cat) for term, subj, cat in watched]
-        all_results = scraper.check_classes(class_list)
+            class_list = [(term, subj, cat) for term, subj, cat in watched]
+            try:
+                all_results = scraper.check_classes(class_list)
+            except Exception as exc:
+                logger.error(f"Scraper failed: {exc}")
+                return
 
-        now = datetime.now(timezone.utc)
+            now = datetime.now(timezone.utc)
+            notified_count = 0
 
-        for (subject, catalog_number, term), results in all_results.items():
-            for r in results:
-                cs = ClassStatus.query.filter_by(
-                    subject=subject, catalog_number=catalog_number,
-                    section=r["section"], term=term
-                ).first()
+            for (subject, catalog_number, term), results in all_results.items():
+                for r in results:
+                    try:
+                        cs = ClassStatus.query.filter_by(
+                            subject=subject, catalog_number=catalog_number,
+                            section=r["section"], term=term
+                        ).first()
 
-                old_status = cs.status if cs else None
+                        old_status = cs.status if cs else None
 
-                if cs:
-                    cs.course_name = r["course_name"]
-                    cs.enrolled = r["enrolled"]
-                    cs.capacity = r["capacity"]
-                    cs.instructor = r.get("instructor", "")
-                    cs.schedule = r.get("schedule", "")
-                    cs.class_nbr = r.get("class_nbr", "")
-                    if cs.status != r["status"]:
-                        cs.last_changed = now
-                    cs.status = r["status"]
-                    cs.last_checked = now
-                else:
-                    cs = ClassStatus(
-                        subject=subject, catalog_number=catalog_number,
-                        section=r["section"], term=term,
-                        course_name=r["course_name"], enrolled=r["enrolled"],
-                        capacity=r["capacity"], status=r["status"],
-                        instructor=r.get("instructor", ""),
-                        schedule=r.get("schedule", ""),
-                        class_nbr=r.get("class_nbr", ""),
-                        last_checked=now, last_changed=now,
-                    )
-                    db.session.add(cs)
-                    db.session.flush()
-
-                # Notify on CLOSED → OPEN transition
-                if old_status and old_status == "Closed" and r["status"] == "Open":
-                    watchers = WatchedClass.query.filter_by(
-                        subject=subject, catalog_number=catalog_number,
-                        section=r["section"], term=term
-                    ).all()
-                    for w in watchers:
-                        user = db.session.get(User, w.user_id)
-                        success = notify_user(
-                            app.config,
-                            user.email,
-                            subject, catalog_number, r["section"],
-                            r["course_name"], r["enrolled"], r["capacity"],
-                        )
-                        if success:
-                            notif = Notification(
-                                user_id=user.id, class_status_id=cs.id,
-                                message=f"{subject} {catalog_number} Sec {r['section']} is now Open ({r['enrolled']}/{r['capacity']})",
+                        if cs:
+                            cs.course_name = r["course_name"]
+                            cs.enrolled = r["enrolled"]
+                            cs.capacity = r["capacity"]
+                            cs.instructor = r.get("instructor", "")
+                            cs.schedule = r.get("schedule", "")
+                            cs.class_nbr = r.get("class_nbr", "")
+                            if cs.status != r["status"]:
+                                cs.last_changed = now
+                            cs.status = r["status"]
+                            cs.last_checked = now
+                        else:
+                            cs = ClassStatus(
+                                subject=subject, catalog_number=catalog_number,
+                                section=r["section"], term=term,
+                                course_name=r["course_name"], enrolled=r["enrolled"],
+                                capacity=r["capacity"], status=r["status"],
+                                instructor=r.get("instructor", ""),
+                                schedule=r.get("schedule", ""),
+                                class_nbr=r.get("class_nbr", ""),
+                                last_checked=now, last_changed=now,
                             )
-                            db.session.add(notif)
+                            db.session.add(cs)
+                            db.session.flush()
 
-        db.session.commit()
-        logger.info("Background check complete.")
+                        # Notify on CLOSED → OPEN transition
+                        if old_status and old_status == "Closed" and r["status"] == "Open":
+                            watchers = WatchedClass.query.filter_by(
+                                subject=subject, catalog_number=catalog_number,
+                                section=r["section"], term=term
+                            ).all()
+                            for w in watchers:
+                                try:
+                                    user = db.session.get(User, w.user_id)
+                                    if not user or not user.email:
+                                        continue
+                                    success = notify_user(
+                                        app.config,
+                                        user.email,
+                                        subject, catalog_number, r["section"],
+                                        r["course_name"], r["enrolled"], r["capacity"],
+                                    )
+                                    if success:
+                                        notif = Notification(
+                                            user_id=user.id, class_status_id=cs.id,
+                                            message=f"{subject} {catalog_number} Sec {r['section']} is now Open ({r['enrolled']}/{r['capacity']})",
+                                        )
+                                        db.session.add(notif)
+                                        notified_count += 1
+                                except Exception as exc:
+                                    logger.error(f"Failed to notify user {w.user_id} for {subject} {catalog_number}: {exc}")
+
+                        db.session.commit()
+                    except Exception as exc:
+                        logger.error(f"Error processing {subject} {catalog_number} Sec {r.get('section', '?')}: {exc}")
+                        db.session.rollback()
+
+            logger.info(f"Background check complete. Notified {notified_count} users.")
+        except Exception as exc:
+            logger.error(f"Background job failed: {exc}")
+            db.session.rollback()
 
 
 # --- App lifecycle ---
@@ -529,6 +561,29 @@ def stop_services():
 
 with app.app_context():
     db.create_all()
+    # SQLite: enable WAL mode and busy timeout for concurrent access
+    with db.engine.connect() as conn:
+        conn.execute(db.text("PRAGMA journal_mode=WAL"))
+        conn.execute(db.text("PRAGMA busy_timeout=5000"))
+        conn.commit()
+    logger.info("SQLite: WAL mode enabled, busy_timeout=5000ms")
+
+    # Add indexes for hot query paths
+    with db.engine.connect() as conn:
+        conn.execute(db.text(
+            "CREATE INDEX IF NOT EXISTS ix_class_status_lookup "
+            "ON class_status (subject, catalog_number, section, term)"
+        ))
+        conn.execute(db.text(
+            "CREATE INDEX IF NOT EXISTS ix_watched_user "
+            "ON watched_classes (user_id, term)"
+        ))
+        conn.execute(db.text(
+            "CREATE INDEX IF NOT EXISTS ix_watched_class_lookup "
+            "ON watched_classes (subject, catalog_number, section, term)"
+        ))
+        conn.commit()
+
     # Migrate existing DB: add new columns if missing
     with db.engine.connect() as conn:
         columns = [row[1] for row in conn.execute(db.text("PRAGMA table_info(users)"))]

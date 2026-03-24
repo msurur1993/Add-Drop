@@ -8,7 +8,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium && playwright install-deps
 
-COPY . .
+# Create non-root user
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
+
+COPY --chown=appuser:appuser . .
 
 EXPOSE 8080
 
