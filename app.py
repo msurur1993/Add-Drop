@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from sqlite3 import IntegrityError as SQLiteIntegrityError
 from zoneinfo import ZoneInfo
@@ -252,6 +252,9 @@ def dashboard():
     )
 
 
+CACHE_MAX_AGE_SECONDS = 120  # Serve cached results if less than 2 minutes old
+
+
 @app.route("/search", methods=["POST"])
 @limiter.limit("10/minute")
 @login_required
@@ -263,40 +266,76 @@ def search():
     if not keyword:
         return render_template("partials/search_results.html", results=[], error="Enter a course name, number, or instructor.")
 
-    results = scraper.search_class(term, subject, keyword)
+    # Try to serve from DB cache first (avoids Playwright for repeated searches)
+    results = None
+    cache_cutoff = datetime.now(timezone.utc) - timedelta(seconds=CACHE_MAX_AGE_SECONDS)
 
-    now = datetime.now(timezone.utc)
-    for r in results:
-        r_subject = r.get("subject", subject)
-        r_catalog = r.get("catalog_number", keyword)
-        cs = ClassStatus.query.filter_by(
-            subject=r_subject, catalog_number=r_catalog,
-            section=r["section"], term=term
-        ).first()
-        if cs:
-            cs.course_name = r["course_name"]
-            cs.enrolled = r["enrolled"]
-            cs.capacity = r["capacity"]
-            cs.instructor = r.get("instructor", "")
-            cs.schedule = r.get("schedule", "")
-            cs.class_nbr = r.get("class_nbr", "")
-            if cs.status != r["status"]:
-                cs.last_changed = now
-            cs.status = r["status"]
-            cs.last_checked = now
-        else:
-            cs = ClassStatus(
+    if subject:
+        # Exact department + keyword search: check if we have fresh cached results
+        cached = ClassStatus.query.filter(
+            ClassStatus.subject == subject,
+            ClassStatus.catalog_number.contains(keyword),
+            ClassStatus.term == term,
+            ClassStatus.last_checked >= cache_cutoff,
+        ).all()
+        if not cached:
+            # Also try matching by course name
+            cached = ClassStatus.query.filter(
+                ClassStatus.subject == subject,
+                ClassStatus.course_name.ilike(f"%{keyword}%"),
+                ClassStatus.term == term,
+                ClassStatus.last_checked >= cache_cutoff,
+            ).all()
+        if cached:
+            results = [
+                {
+                    "subject": cs.subject, "catalog_number": cs.catalog_number,
+                    "section": cs.section, "course_name": cs.course_name or "",
+                    "course_id": f"{cs.subject} {cs.catalog_number}/{cs.section}",
+                    "class_nbr": cs.class_nbr or "", "enrolled": cs.enrolled,
+                    "capacity": cs.capacity, "status": cs.status,
+                    "instructor": cs.instructor or "", "schedule": cs.schedule or "",
+                }
+                for cs in cached
+            ]
+            logger.info(f"Cache hit: {len(results)} results for {subject} '{keyword}'")
+
+    # Cache miss — scrape PeopleSoft
+    if results is None:
+        results = scraper.search_class(term, subject, keyword)
+
+        now = datetime.now(timezone.utc)
+        for r in results:
+            r_subject = r.get("subject", subject)
+            r_catalog = r.get("catalog_number", keyword)
+            cs = ClassStatus.query.filter_by(
                 subject=r_subject, catalog_number=r_catalog,
-                section=r["section"], term=term,
-                course_name=r["course_name"], enrolled=r["enrolled"],
-                capacity=r["capacity"], status=r["status"],
-                instructor=r.get("instructor", ""),
-                schedule=r.get("schedule", ""),
-                class_nbr=r.get("class_nbr", ""),
-                last_checked=now, last_changed=now,
-            )
-            db.session.add(cs)
-    db.session.commit()
+                section=r["section"], term=term
+            ).first()
+            if cs:
+                cs.course_name = r["course_name"]
+                cs.enrolled = r["enrolled"]
+                cs.capacity = r["capacity"]
+                cs.instructor = r.get("instructor", "")
+                cs.schedule = r.get("schedule", "")
+                cs.class_nbr = r.get("class_nbr", "")
+                if cs.status != r["status"]:
+                    cs.last_changed = now
+                cs.status = r["status"]
+                cs.last_checked = now
+            else:
+                cs = ClassStatus(
+                    subject=r_subject, catalog_number=r_catalog,
+                    section=r["section"], term=term,
+                    course_name=r["course_name"], enrolled=r["enrolled"],
+                    capacity=r["capacity"], status=r["status"],
+                    instructor=r.get("instructor", ""),
+                    schedule=r.get("schedule", ""),
+                    class_nbr=r.get("class_nbr", ""),
+                    last_checked=now, last_changed=now,
+                )
+                db.session.add(cs)
+        db.session.commit()
 
     user_id = session["user_id"]
     watched_keys = set()

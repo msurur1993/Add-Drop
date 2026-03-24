@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add/Drop — UChicago Class Tracker</title>
+    <title>Add/Drop — Class Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <style>
@@ -40,6 +40,10 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="max-w-6xl mx-auto px-6 py-6 text-center">
+        <p class="text-xs text-gray-400">Unofficial student project. Not affiliated with the University of Chicago. Use at your own risk.</p>
+    </footer>
 
     <!-- Toast notifications -->
     <div id="toast-area" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
