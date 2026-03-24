@@ -319,6 +319,18 @@ def watch():
     section = request.form.get("section", "").strip()
     term = request.form.get("term", "").strip()
 
+    # Don't allow tracking classes that are already open
+    cs = ClassStatus.query.filter_by(
+        subject=subject, catalog_number=catalog_number, section=section, term=term
+    ).first()
+    if cs and cs.status == "Open":
+        toast = (
+            '<div hx-swap-oob="afterbegin:#toast-area">'
+            '<div class="toast bg-emerald-50 text-emerald-700 border border-emerald-200">'
+            f'{subject} {catalog_number} is open — go enroll now!</div></div>'
+        )
+        return make_response(toast, 200)
+
     existing = WatchedClass.query.filter_by(
         user_id=user_id, subject=subject, catalog_number=catalog_number,
         section=section, term=term
