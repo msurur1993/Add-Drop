@@ -328,17 +328,19 @@ def watch():
     ).first()
 
     w = existing or wc
+    new_count = WatchedClass.query.filter_by(user_id=user_id).count()
 
     btn_id = f"track-btn-{subject}-{catalog_number}-{section}"
     watchlist_html = render_template("partials/watchlist_item.html", watch=w, status=status)
     oob_html = f'<span id="{btn_id}" hx-swap-oob="true" class="text-xs text-gray-400 px-3 py-1.5 bg-gray-100 rounded-lg">Tracking</span>'
+    counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
     toast_html = (
         '<div hx-swap-oob="afterbegin:#toast-area">'
         f'<div class="toast bg-green-50 text-green-700 border border-green-200">'
         f'Now tracking {subject} {catalog_number} Sec {section}</div></div>'
     )
 
-    resp = make_response(watchlist_html + oob_html + toast_html)
+    resp = make_response(watchlist_html + oob_html + counter_html + toast_html)
     return resp
 
 
@@ -350,11 +352,14 @@ def unwatch(watch_id):
         label = f"{wc.subject} {wc.catalog_number} Sec {wc.section}"
         db.session.delete(wc)
         db.session.commit()
-        return (
+        new_count = WatchedClass.query.filter_by(user_id=session["user_id"]).count()
+        counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
+        toast_html = (
             '<div hx-swap-oob="afterbegin:#toast-area">'
             f'<div class="toast bg-gray-50 text-gray-700 border border-gray-200">'
             f'Removed {label} from watchlist</div></div>'
         )
+        return counter_html + toast_html
     return "", 200
 
 
