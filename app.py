@@ -112,10 +112,18 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if "user_id" not in session:
+            if request.headers.get("HX-Request"):
+                resp = make_response("", 200)
+                resp.headers["HX-Redirect"] = url_for("index")
+                return resp
             return redirect(url_for("index"))
         user = db.session.get(User, session["user_id"])
         if not user:
             session.clear()
+            if request.headers.get("HX-Request"):
+                resp = make_response("", 200)
+                resp.headers["HX-Redirect"] = url_for("index")
+                return resp
             return redirect(url_for("index"))
         return f(*args, **kwargs)
     return decorated
@@ -359,7 +367,9 @@ def unwatch(watch_id):
             f'<div class="toast bg-gray-50 text-gray-700 border border-gray-200">'
             f'Removed {label} from watchlist</div></div>'
         )
-        return counter_html + toast_html
+        # Return empty string as main content (removes the target element via outerHTML swap)
+        # plus OOB swaps for counter and toast
+        return make_response(counter_html + toast_html, 200)
     return "", 200
 
 
