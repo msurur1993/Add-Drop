@@ -35,6 +35,7 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
             </button>
+            <p class="text-xs text-gray-400 mt-2 text-center">This may take a few seconds</p>
         </form>
 
         <div id="search-results" class="mt-4"></div>
@@ -67,7 +68,7 @@
             {% include "partials/watchlist_item.html" with context %}
             {% endfor %}
             {% else %}
-            <p class="text-gray-400 text-sm">No classes tracked yet. Search and add classes to start monitoring.</p>
+            <p id="empty-watchlist" class="text-gray-400 text-sm">No classes tracked yet. Search and add classes to start monitoring.</p>
             {% endif %}
         </div>
     </div>

@@ -342,13 +342,15 @@ def watch():
     watchlist_html = render_template("partials/watchlist_item.html", watch=w, status=status)
     oob_html = f'<span id="{btn_id}" hx-swap-oob="true" class="text-xs text-gray-400 px-3 py-1.5 bg-gray-100 rounded-lg">Tracking</span>'
     counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
+    # Remove the "No classes tracked yet" empty state
+    empty_html = '<p id="empty-watchlist" hx-swap-oob="true"></p>'
     toast_html = (
         '<div hx-swap-oob="afterbegin:#toast-area">'
         f'<div class="toast bg-green-50 text-green-700 border border-green-200">'
         f'Now tracking {subject} {catalog_number} Sec {section}</div></div>'
     )
 
-    resp = make_response(watchlist_html + oob_html + counter_html + toast_html)
+    resp = make_response(watchlist_html + oob_html + counter_html + empty_html + toast_html)
     return resp
 
 
@@ -357,19 +359,36 @@ def watch():
 def unwatch(watch_id):
     wc = WatchedClass.query.filter_by(id=watch_id, user_id=session["user_id"]).first()
     if wc:
-        label = f"{wc.subject} {wc.catalog_number} Sec {wc.section}"
+        subject = wc.subject
+        catalog_number = wc.catalog_number
+        section = wc.section
+        term = wc.term
+        label = f"{subject} {catalog_number} Sec {section}"
         db.session.delete(wc)
         db.session.commit()
         new_count = WatchedClass.query.filter_by(user_id=session["user_id"]).count()
+
         counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
+        # Revert "Tracking" label back to a "Track" button in search results
+        btn_id = f"track-btn-{subject}-{catalog_number}-{section}"
+        btn_html = (
+            f'<button id="{btn_id}" hx-swap-oob="true"'
+            f' hx-post="/watch"'
+            f""" hx-vals='{{"subject": "{subject}", "catalog_number": "{catalog_number}", "section": "{section}", "term": "{term}"}}'"""
+            f' hx-target="#watchlist" hx-swap="afterbegin"'
+            f' class="text-xs px-3 py-1.5 bg-[#800000] hover:bg-[#9A2A2A] text-white rounded-lg transition">'
+            f'Track</button>'
+        )
+        # Show empty state if watchlist is now empty
+        empty_html = ""
+        if new_count == 0:
+            empty_html = '<p id="empty-watchlist" hx-swap-oob="true" class="text-gray-400 text-sm">No classes tracked yet. Search and add classes to start monitoring.</p>'
         toast_html = (
             '<div hx-swap-oob="afterbegin:#toast-area">'
             f'<div class="toast bg-gray-50 text-gray-700 border border-gray-200">'
             f'Removed {label} from watchlist</div></div>'
         )
-        # Return empty string as main content (removes the target element via outerHTML swap)
-        # plus OOB swaps for counter and toast
-        return make_response(counter_html + toast_html, 200)
+        return make_response(counter_html + btn_html + empty_html + toast_html, 200)
     return "", 200
 
 
