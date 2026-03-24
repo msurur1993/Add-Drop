@@ -4,12 +4,17 @@ RUN apt-get update && apt-get install -y wget gnupg && rm -rf /var/lib/apt/lists
 
 WORKDIR /app
 
+# Create non-root user before installing Playwright
+RUN useradd -m -r appuser
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN playwright install chromium && playwright install-deps
 
-# Create non-root user
-RUN useradd -m -r appuser && chown -R appuser:appuser /app
+# Install Playwright as appuser so browser cache is accessible
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+RUN playwright install chromium && playwright install-deps
+RUN chown -R appuser:appuser /app /home/appuser
+
 USER appuser
 
 COPY --chown=appuser:appuser . .
