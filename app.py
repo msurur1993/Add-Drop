@@ -6,6 +6,7 @@ import re
 import secrets
 from datetime import datetime, timezone
 from functools import wraps
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from authlib.integrations.base_client import OAuthError
@@ -41,6 +42,18 @@ limiter = Limiter(
     default_limits=[],
     storage_uri="memory://",
 )
+
+CHICAGO_TZ = ZoneInfo("America/Chicago")
+
+
+@app.template_filter("chicago_time")
+def chicago_time_filter(dt):
+    """Convert a UTC datetime to Chicago time, formatted as 12-hour."""
+    if dt is None:
+        return ""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(CHICAGO_TZ).strftime("%-I:%M %p")
 
 
 def google_oauth_ready():

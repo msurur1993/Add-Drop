@@ -16,7 +16,7 @@
             {{ s.enrolled }}/{{ s.capacity }} enrolled &middot;
             <span class="{% if s.status == 'Open' %}text-emerald-600{% elif s.status == 'Closed' %}text-red-600{% else %}text-gray-500{% endif %}">{{ s.status }}</span>
             {% if s.last_checked %}
-            &middot; checked {{ s.last_checked.strftime('%-I:%M %p') }}
+            &middot; checked {{ s.last_checked | chicago_time }}
             {% endif %}
         </p>
         {% if s.instructor or s.schedule %}
