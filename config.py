@@ -57,14 +57,19 @@ load_local_env()
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
-    # Use DB_DIR env var for persistent storage on Railway (mount a volume there)
+
+    # Database: prefer DATABASE_URL (Postgres on Railway), fall back to SQLite
     _db_dir = os.environ.get("DB_DIR", "")
     if _db_dir:
         os.makedirs(_db_dir, exist_ok=True)
         _default_db = f"sqlite:///{_db_dir}/addrop.db"
     else:
         _default_db = "sqlite:///addrop.db"
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", _default_db)
+    _database_url = os.environ.get("DATABASE_URL", _default_db)
+    # Railway provides postgres:// but SQLAlchemy requires postgresql://
+    if _database_url.startswith("postgres://"):
+        _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI = _database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # PeopleSoft class search

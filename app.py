@@ -22,6 +22,10 @@ from config import Config
 from departments import DEPARTMENTS
 from models import ClassStatus, Notification, User, WatchedClass, db
 from notifier import (
+    _email_settings,
+    _send_via_resend,
+    _send_via_smtp,
+    _send_via_gmail,
     notification_provider_name,
     notification_sender,
     notifications_ready,
@@ -29,10 +33,30 @@ from notifier import (
 )
 from scraper import PeopleSoftScraper
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+_is_production = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PRODUCTION"))
+if _is_production:
+    from pythonjsonlogger import jsonlogger
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s %(message)s",
+        rename_fields={"asctime": "timestamp", "levelname": "level"},
+    ))
+    logging.root.handlers = [_handler]
+    logging.root.setLevel(logging.INFO)
+else:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 MAX_WATCHES_PER_USER = 5
+MAX_CONSECUTIVE_FAILURES = int(os.environ.get("MAX_SCRAPER_FAILURES", "5"))
+ALERT_COOLDOWN_SECONDS = 3600  # Max 1 admin alert per hour
+
+# --- Scheduler health tracking ---
+_scheduler_state = {
+    "consecutive_failures": 0,
+    "last_successful_check": None,
+    "last_alert_time": None,
+}
 
 # --- App setup ---
 app = Flask(__name__)
@@ -215,6 +239,7 @@ def google_callback():
     session.clear()
     session["user_id"] = user.id
     session["username"] = user.name or user.username
+    logger.info("User signed in", extra={"event": "user_signin", "user_id": user.id, "email": email})
     flash("Signed in with Google.", "success")
     return redirect(url_for("dashboard"))
 
@@ -430,6 +455,7 @@ def watch():
 
     w = existing or wc
     new_count = WatchedClass.query.filter_by(user_id=user_id).count()
+    logger.info("Class tracked", extra={"event": "class_tracked", "user_id": user_id, "class": f"{subject} {catalog_number} Sec {section}"})
 
     # Count how many users are tracking this class
     from sqlalchemy import func as sa_func
@@ -465,6 +491,7 @@ def unwatch(watch_id):
         label = f"{subject} {catalog_number} Sec {section}"
         db.session.delete(wc)
         db.session.commit()
+        logger.info("Class untracked", extra={"event": "class_untracked", "user_id": session["user_id"], "class": label})
         new_count = WatchedClass.query.filter_by(user_id=session["user_id"]).count()
 
         counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
@@ -524,10 +551,15 @@ def watchlist():
 
 @app.route("/health")
 def health():
+    consecutive_failures = _scheduler_state["consecutive_failures"]
+    status = "ok" if consecutive_failures < MAX_CONSECUTIVE_FAILURES else "degraded"
     return {
-        "status": "ok",
-        "watched_count": WatchedClass.query.count(),
+        "status": status,
         "scheduler_running": scheduler.running,
+        "last_successful_check": _scheduler_state["last_successful_check"],
+        "consecutive_failures": consecutive_failures,
+        "total_users": User.query.count(),
+        "total_watched_classes": WatchedClass.query.count(),
     }
 
 
@@ -609,6 +641,49 @@ def ratelimit_handler(e):
     return '<div class="p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">Too many requests. Please slow down.</div>', 429
 
 
+# --- Admin alerting ---
+
+def send_admin_alert(subject, body):
+    """Email the admin (user.id == 1) on critical errors. Rate-limited to 1/hour."""
+    now = datetime.now(timezone.utc)
+    last_alert = _scheduler_state.get("last_alert_time")
+    if last_alert and (now - last_alert).total_seconds() < ALERT_COOLDOWN_SECONDS:
+        logger.warning("Admin alert suppressed (rate limit): %s", subject)
+        return False
+
+    try:
+        with app.app_context():
+            admin = db.session.get(User, 1)
+            if not admin or not admin.email:
+                logger.warning("No admin user (id=1) or admin has no email; cannot send alert")
+                return False
+
+            settings = _email_settings(app.config)
+            if not settings["from_email"]:
+                logger.warning("No notification sender configured; cannot send admin alert")
+                return False
+
+            provider = settings["provider"]
+            sent = False
+            if provider == "resend":
+                sent = _send_via_resend(settings, admin.email, subject, body)
+            elif provider == "smtp":
+                sent = _send_via_smtp(settings, admin.email, subject, body)
+            elif provider == "gmail_api":
+                gmail_settings = dict(settings["gmail"])
+                gmail_settings["sender"] = settings["from_email"]
+                gmail_settings["reply_to"] = settings["reply_to"]
+                sent = _send_via_gmail(gmail_settings, admin.email, subject, body)
+
+            if sent:
+                _scheduler_state["last_alert_time"] = now
+                logger.info("Admin alert sent: %s", subject)
+            return sent
+    except Exception as exc:
+        logger.error("Failed to send admin alert: %s", exc)
+        return False
+
+
 # --- Background job ---
 
 def check_watched_classes():
@@ -627,13 +702,24 @@ def check_watched_classes():
             if not watched:
                 return
 
-            logger.info(f"Checking {len(watched)} distinct classes...")
+            logger.info("Background job started", extra={"event": "bg_job_start", "distinct_classes": len(watched)})
 
             class_list = [(term, subj, cat) for term, subj, cat in watched]
             try:
                 all_results = scraper.check_classes(class_list)
             except Exception as exc:
-                logger.error(f"Scraper failed: {exc}")
+                _scheduler_state["consecutive_failures"] += 1
+                count = _scheduler_state["consecutive_failures"]
+                logger.error("Scraper failed", extra={"event": "scraper_error", "consecutive_failures": count, "error": str(exc)})
+                if count >= MAX_CONSECUTIVE_FAILURES:
+                    logger.critical(f"Scraper has failed {count} times in a row!")
+                    send_admin_alert(
+                        f"[Add/Drop] Scraper failing — {count} consecutive errors",
+                        f"The background scraper has failed {count} times in a row.\n\n"
+                        f"Latest error: {exc}\n\n"
+                        f"The scheduler is still running but class checks are not completing. "
+                        f"Please investigate.",
+                    )
                 return
 
             now = datetime.now(timezone.utc)
@@ -702,6 +788,7 @@ def check_watched_classes():
                                         )
                                         db.session.add(notif)
                                         notified_count += 1
+                                        logger.info("Notification sent", extra={"event": "notification_sent", "user_id": user.id, "class": f"{subject} {catalog_number} Sec {r['section']}"})
                                 except Exception as exc:
                                     logger.error(f"Failed to notify user {w.user_id} for {subject} {catalog_number}: {exc}")
 
@@ -709,11 +796,25 @@ def check_watched_classes():
                     except Exception as exc:
                         logger.error(f"Error processing {subject} {catalog_number} Sec {r.get('section', '?')}: {exc}")
                         db.session.rollback()
+                        continue  # Continue to next class — don't abort the batch
 
-            logger.info(f"Background check complete. Notified {notified_count} users.")
+            # Scraper succeeded: reset failure counter, record success time
+            _scheduler_state["consecutive_failures"] = 0
+            _scheduler_state["last_successful_check"] = now.isoformat()
+            logger.info("Background job complete", extra={"event": "bg_job_complete", "notified_count": notified_count})
         except Exception as exc:
-            logger.error(f"Background job failed: {exc}")
+            _scheduler_state["consecutive_failures"] += 1
+            count = _scheduler_state["consecutive_failures"]
+            logger.error("Background job failed", extra={"event": "bg_job_fail", "consecutive_failures": count, "error": str(exc)})
             db.session.rollback()
+            if count >= MAX_CONSECUTIVE_FAILURES:
+                logger.critical(f"Background job has failed {count} times in a row!")
+                send_admin_alert(
+                    f"[Add/Drop] Background job failing — {count} consecutive errors",
+                    f"The background check job has failed {count} times in a row.\n\n"
+                    f"Latest error: {exc}\n\n"
+                    f"This may indicate a database or scraper issue. Please investigate.",
+                )
 
 
 # --- App lifecycle ---
@@ -760,16 +861,22 @@ def stop_services():
     scraper.stop()
 
 
+_using_sqlite = app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite")
+
 with app.app_context():
     db.create_all()
-    # SQLite: enable WAL mode and busy timeout for concurrent access
-    with db.engine.connect() as conn:
-        conn.execute(db.text("PRAGMA journal_mode=WAL"))
-        conn.execute(db.text("PRAGMA busy_timeout=5000"))
-        conn.commit()
-    logger.info("SQLite: WAL mode enabled, busy_timeout=5000ms")
 
-    # Add indexes for hot query paths
+    if _using_sqlite:
+        # SQLite: enable WAL mode and busy timeout for concurrent access
+        with db.engine.connect() as conn:
+            conn.execute(db.text("PRAGMA journal_mode=WAL"))
+            conn.execute(db.text("PRAGMA busy_timeout=5000"))
+            conn.commit()
+        logger.info("SQLite: WAL mode enabled, busy_timeout=5000ms")
+    else:
+        logger.info("Using PostgreSQL database")
+
+    # Add indexes for hot query paths (works on both SQLite and Postgres)
     with db.engine.connect() as conn:
         conn.execute(db.text(
             "CREATE INDEX IF NOT EXISTS ix_class_status_lookup "
@@ -786,28 +893,41 @@ with app.app_context():
         conn.commit()
 
     # Migrate existing DB: add new columns if missing
-    with db.engine.connect() as conn:
-        columns = [row[1] for row in conn.execute(db.text("PRAGMA table_info(users)"))]
-        if "email" not in columns:
-            conn.execute(db.text("ALTER TABLE users ADD COLUMN email VARCHAR(200)"))
+    if _using_sqlite:
+        with db.engine.connect() as conn:
+            columns = [row[1] for row in conn.execute(db.text("PRAGMA table_info(users)"))]
+            if "email" not in columns:
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN email VARCHAR(200)"))
+                conn.commit()
+                logger.info("Migrated: added email column to users")
+            if "ntfy_topic" not in columns:
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN ntfy_topic VARCHAR(120)"))
+                conn.commit()
+                logger.info("Migrated: added ntfy_topic column to users")
+            if "google_id" not in columns:
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN google_id VARCHAR(200)"))
+                conn.commit()
+                logger.info("Migrated: added google_id column to users")
+            if "name" not in columns:
+                conn.execute(db.text("ALTER TABLE users ADD COLUMN name VARCHAR(200)"))
+                conn.commit()
+                logger.info("Migrated: added name column to users")
+            conn.execute(
+                db.text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_ntfy_topic ON users (ntfy_topic)")
+            )
             conn.commit()
-            logger.info("Migrated: added email column to users")
-        if "ntfy_topic" not in columns:
-            conn.execute(db.text("ALTER TABLE users ADD COLUMN ntfy_topic VARCHAR(120)"))
+    else:
+        # Postgres: add columns if they don't exist (idempotent)
+        with db.engine.connect() as conn:
+            for col, coltype in [("email", "VARCHAR(200)"), ("ntfy_topic", "VARCHAR(120)"),
+                                  ("google_id", "VARCHAR(200)"), ("name", "VARCHAR(200)")]:
+                conn.execute(db.text(
+                    f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} {coltype}"
+                ))
+            conn.execute(db.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_ntfy_topic ON users (ntfy_topic)"
+            ))
             conn.commit()
-            logger.info("Migrated: added ntfy_topic column to users")
-        if "google_id" not in columns:
-            conn.execute(db.text("ALTER TABLE users ADD COLUMN google_id VARCHAR(200)"))
-            conn.commit()
-            logger.info("Migrated: added google_id column to users")
-        if "name" not in columns:
-            conn.execute(db.text("ALTER TABLE users ADD COLUMN name VARCHAR(200)"))
-            conn.commit()
-            logger.info("Migrated: added name column to users")
-        conn.execute(
-            db.text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_ntfy_topic ON users (ntfy_topic)")
-        )
-        conn.commit()
 
     users_missing_topic = User.query.filter(
         (User.ntfy_topic.is_(None)) | (User.ntfy_topic == "")

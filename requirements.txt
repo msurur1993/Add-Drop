@@ -4,6 +4,8 @@ apscheduler
 playwright
 requests
 gunicorn
+psycopg2-binary
+python-json-logger
 google-api-python-client
 google-auth-oauthlib
 google-auth-httplib2
