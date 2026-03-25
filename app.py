@@ -685,11 +685,15 @@ def check_watched_classes():
                                     user = db.session.get(User, w.user_id)
                                     if not user or not user.email:
                                         continue
+                                    # Build app URL for untrack link in email
+                                    domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
+                                    app_url = f"https://{domain}" if domain else ""
                                     success = notify_user(
                                         app.config,
                                         user.email,
                                         subject, catalog_number, r["section"],
                                         r["course_name"], r["enrolled"], r["capacity"],
+                                        app_url=app_url,
                                     )
                                     if success:
                                         notif = Notification(

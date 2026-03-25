@@ -288,16 +288,29 @@ def get_gmail_service(config=None):
     return _get_gmail_service(_gmail_settings(config))
 
 
-def _seat_opening_message(subject_code, catalog_number, section, course_name, enrolled, capacity):
+def _seat_opening_message(subject_code, catalog_number, section, course_name, enrolled, capacity, app_url=""):
     subject = f"Seat Available: {subject_code} {catalog_number}"
     enroll_url = "https://portal.uchicago.edu/ais/"
+    dashboard_url = f"{app_url}/dashboard" if app_url else ""
     text_body = (
+        f"{subject_code} {catalog_number} Section {section} is now OPEN!\n\n"
+        f"{course_name}\n"
+        f"Enrollment: {enrolled}/{capacity}\n\n"
+        f"Log in to enroll before it fills up: {enroll_url}\n\n"
+        f"Already enrolled? Untrack this class so you stop getting emails: {dashboard_url}" if dashboard_url else
         f"{subject_code} {catalog_number} Section {section} is now OPEN!\n\n"
         f"{course_name}\n"
         f"Enrollment: {enrolled}/{capacity}\n\n"
         f"Log in to enroll before it fills up: {enroll_url}"
     )
     html_body = (
+        f"<p><strong>{subject_code} {catalog_number} Section {section}</strong> is now OPEN!</p>"
+        f"<p>{course_name}<br>Enrollment: {enrolled}/{capacity}</p>"
+        f'<p><a href="{enroll_url}" style="color:#800000;font-weight:bold;">'
+        f"Log in to enroll before it fills up</a></p>"
+        f'<p style="margin-top:16px;font-size:13px;color:#666;">Already enrolled? '
+        f'<a href="{dashboard_url}" style="color:#800000;">Untrack this class</a> to stop receiving alerts.</p>'
+        if dashboard_url else
         f"<p><strong>{subject_code} {catalog_number} Section {section}</strong> is now OPEN!</p>"
         f"<p>{course_name}<br>Enrollment: {enrolled}/{capacity}</p>"
         f'<p><a href="{enroll_url}" style="color:#800000;font-weight:bold;">'
@@ -421,7 +434,7 @@ def _send_via_gmail(settings, to_email, subject, body, html_body=""):
         return False
 
 
-def notify_user(config, to_email, subject_code, catalog_number, section, course_name, enrolled, capacity):
+def notify_user(config, to_email, subject_code, catalog_number, section, course_name, enrolled, capacity, app_url=""):
     """Send an email notification when a seat opens up."""
     if not to_email:
         logger.warning("No email address for user, skipping notification")
@@ -443,6 +456,7 @@ def notify_user(config, to_email, subject_code, catalog_number, section, course_
         course_name,
         enrolled,
         capacity,
+        app_url,
     )
 
     provider = settings["provider"]
