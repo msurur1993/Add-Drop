@@ -231,13 +231,27 @@ def dashboard():
     user = db.session.get(User, session["user_id"])
     watches = WatchedClass.query.filter_by(user_id=user.id).order_by(WatchedClass.created_at.desc()).all()
 
+    # Get watcher counts for tracked classes
+    from sqlalchemy import func as sa_func
+    count_query = (
+        db.session.query(
+            WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section,
+            sa_func.count(WatchedClass.id).label("cnt"),
+        )
+        .filter(WatchedClass.term.in_([w.term for w in watches]))
+        .group_by(WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section)
+        .all()
+    ) if watches else []
+    watcher_counts = {(s, c, sec): cnt for s, c, sec, cnt in count_query}
+
     watch_data = []
     for w in watches:
         status = ClassStatus.query.filter_by(
             subject=w.subject, catalog_number=w.catalog_number,
             section=w.section, term=w.term
         ).first()
-        watch_data.append({"watch": w, "status": status})
+        wc = watcher_counts.get((w.subject, w.catalog_number, w.section), 0)
+        watch_data.append({"watch": w, "status": status, "watcher_count": wc})
 
     return render_template(
         "dashboard.html",
@@ -247,8 +261,6 @@ def dashboard():
         term=app.config["CURRENT_TERM"],
         departments=DEPARTMENTS,
         notifications_ready=notifications_ready(app.config),
-        notification_provider=notification_provider_name(app.config),
-        notification_sender=notification_sender(app.config),
     )
 
 
@@ -342,9 +354,27 @@ def search():
     for w in WatchedClass.query.filter_by(user_id=user_id, term=term).all():
         watched_keys.add((w.subject, w.catalog_number, w.section))
 
+    # Count how many users are tracking each class in the results
+    watcher_counts = {}
+    if results:
+        from sqlalchemy import func
+        keys = [(r.get("subject", ""), r.get("catalog_number", ""), r.get("section", "")) for r in results]
+        counts = (
+            db.session.query(
+                WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section,
+                func.count(WatchedClass.id).label("cnt"),
+            )
+            .filter(WatchedClass.term == term)
+            .group_by(WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section)
+            .all()
+        )
+        for subj, cat, sec, cnt in counts:
+            watcher_counts[(subj, cat, sec)] = cnt
+
     return render_template(
         "partials/search_results.html",
-        results=results, term=term, watched_keys=watched_keys, error=None,
+        results=results, term=term, watched_keys=watched_keys,
+        watcher_counts=watcher_counts, error=None,
     )
 
 
@@ -401,8 +431,14 @@ def watch():
     w = existing or wc
     new_count = WatchedClass.query.filter_by(user_id=user_id).count()
 
+    # Count how many users are tracking this class
+    from sqlalchemy import func as sa_func
+    watcher_count = WatchedClass.query.filter_by(
+        subject=subject, catalog_number=catalog_number, section=section, term=term
+    ).count()
+
     btn_id = f"track-btn-{subject}-{catalog_number}-{section}"
-    watchlist_html = render_template("partials/watchlist_item.html", watch=w, status=status)
+    watchlist_html = render_template("partials/watchlist_item.html", watch=w, status=status, watcher_count=watcher_count)
     oob_html = f'<span id="{btn_id}" hx-swap-oob="true" class="text-xs text-gray-400 px-3 py-1.5 bg-gray-100 rounded-lg">Tracking</span>'
     counter_html = f'<span id="slot-counter" hx-swap-oob="true" class="text-xs text-gray-400">{new_count}/5 slots used</span>'
     # Remove the "No classes tracked yet" empty state
@@ -461,20 +497,64 @@ def watchlist():
     user_id = session["user_id"]
     watches = WatchedClass.query.filter_by(user_id=user_id).order_by(WatchedClass.created_at.desc()).all()
 
+    # Get watcher counts for all tracked classes
+    from sqlalchemy import func as sa_func
+    count_query = (
+        db.session.query(
+            WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section,
+            sa_func.count(WatchedClass.id).label("cnt"),
+        )
+        .filter(WatchedClass.term.in_([w.term for w in watches]))
+        .group_by(WatchedClass.subject, WatchedClass.catalog_number, WatchedClass.section)
+        .all()
+    ) if watches else []
+    watcher_counts = {(s, c, sec): cnt for s, c, sec, cnt in count_query}
+
     watch_data = []
     for w in watches:
         status = ClassStatus.query.filter_by(
             subject=w.subject, catalog_number=w.catalog_number,
             section=w.section, term=w.term
         ).first()
-        watch_data.append({"watch": w, "status": status})
+        wc = watcher_counts.get((w.subject, w.catalog_number, w.section), 0)
+        watch_data.append({"watch": w, "status": status, "watcher_count": wc})
 
     return render_template("partials/watchlist_list.html", watch_data=watch_data)
 
 
 @app.route("/health")
 def health():
-    return {"status": "ok", "watched_count": WatchedClass.query.count()}
+    return {
+        "status": "ok",
+        "watched_count": WatchedClass.query.count(),
+        "scheduler_running": scheduler.running,
+    }
+
+
+@app.route("/cron/check", methods=["GET", "POST"])
+def cron_check():
+    """External cron endpoint to trigger a class check.
+
+    This allows free external cron services (like cron-job.org) to wake
+    the service AND trigger a check, ensuring notifications work even if
+    Railway sleeps the service.
+    """
+    secret = request.args.get("key", "")
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        return {"error": "unauthorized"}, 401
+
+    # If scheduler is running, it handles checks. Just confirm alive.
+    if scheduler.running:
+        return {"status": "alive", "scheduler": "running"}
+
+    # Scheduler not running — restart it
+    try:
+        start_services()
+        return {"status": "restarted", "scheduler": "restarted"}
+    except Exception as e:
+        logger.error(f"Failed to restart services from cron: {e}")
+        return {"status": "error", "message": str(e)}, 500
 
 
 @app.route("/admin/stats")
@@ -647,6 +727,25 @@ def start_services():
         max_instances=1, misfire_grace_time=30,
         id="check_classes",
     )
+
+    # Self-ping to prevent Railway from sleeping the service
+    def keep_alive():
+        """Ping our own health endpoint to prevent idle sleep."""
+        import urllib.request
+        try:
+            url = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
+            if url:
+                urllib.request.urlopen(f"https://{url}/health", timeout=10)
+                logger.debug("Keep-alive ping sent")
+        except Exception:
+            pass  # Non-critical, just preventing sleep
+
+    scheduler.add_job(
+        keep_alive, "interval",
+        minutes=5,
+        id="keep_alive",
+    )
+
     scheduler.start()
     logger.info(f"Scheduler started: checking every {app.config['CHECK_INTERVAL_SECONDS']}s")
 

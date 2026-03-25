@@ -1,5 +1,6 @@
 {% if watch_data %}
 {% for item in watch_data %}
+{% set watcher_count = item.watcher_count %}
 {% include "partials/watchlist_item.html" with context %}
 {% endfor %}
 {% else %}

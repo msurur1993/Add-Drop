@@ -18,6 +18,9 @@
             {% if s.last_checked %}
             &middot; checked {{ s.last_checked | chicago_time }}
             {% endif %}
+            {% if watcher_count is defined and watcher_count > 1 %}
+            &middot; <span class="text-indigo-500">{{ watcher_count }} tracking</span>
+            {% endif %}
         </p>
         {% if s.instructor or s.schedule %}
         <p class="text-xs text-gray-400 mt-0.5">

@@ -55,9 +55,9 @@
                 <p class="text-sm text-gray-700">Notifications go to <span class="font-medium text-[#800000]">{{ user.email }}</span></p>
             </div>
             {% if notifications_ready %}
-            <p class="text-xs text-gray-400 mt-2">Seat alerts are enabled and send from <span class="font-medium">{{ notification_sender }}</span>{% if notification_provider %} via {{ notification_provider }}{% endif %}.</p>
+            <p class="text-xs text-gray-400 mt-2">✓ Seat alerts are enabled. You'll get an email when a tracked class opens up.</p>
             {% else %}
-            <p class="text-xs text-amber-700 mt-2">Email delivery still needs an app mail provider. Configure Resend, SMTP, or the legacy Gmail API fallback to send alerts from an app-owned address.</p>
+            <p class="text-xs text-amber-700 mt-2">⚠ Email alerts are not yet configured. Contact the admin.</p>
             {% endif %}
         </div>
 
@@ -65,6 +65,7 @@
             <!-- Watchlist loads here -->
             {% if watch_data %}
             {% for item in watch_data %}
+            {% set watcher_count = item.watcher_count %}
             {% include "partials/watchlist_item.html" with context %}
             {% endfor %}
             {% else %}
